@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liars Bar - Symulacja</title>
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
+
+
+  <style>
+    /* Kontener napisu - moved to upper right */
+    #messageContainer {
+      position: absolute;
+      top: 2vh;
+      right: 2vw;
+      width: auto;
+      max-width: 40vw;
+      text-align: right;
+      z-index: 10;
+    }
+
+    #buttonContainer {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      text-align: center;
+      z-index: 5;
+      padding-bottom: 2vh;
+    }
+
+    /* Weapon selection menu */
+    #weaponMenuButton {
+      position: absolute;
+      bottom: 2vh;
+      left: 1vw;
+      background-color: rgba(0, 0, 0, 0.8);
+      border: 1px solid #444;
+      border-radius: 20%;
+      width: 60px;
+      height: 60px;
+      cursor: pointer;
+      z-index: 15;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: #fff;
+      transition: all 0.3s ease;
+    }
+
+    #weaponMenuButton:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      transform: scale(1.1);
+    }
+
+    #weaponMenu {
+      position: absolute;
+      bottom: 25vh;
+      left: 2vw;
+      background-color: rgba(0, 0, 0, 0.9);
+      border: 1px solid #444;
+      border-radius: 10px;
+      padding: 15px;
+      z-index: 20;
+      max-width: 200px;
+      opacity: 0;
+      transform: translateY(20px);
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+
+    #weaponMenu.open {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+
+    #weaponMenu h3 {
+      margin: 0 0 10px 0;
+      font-size: 1.2rem;
+      color: #fff;
+      text-align: center;
+    }
+
+    .weapon-option {
+      display: flex;
+      align-items: center;
+      margin: 8px 0;
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+
+    .weapon-option:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .weapon-option.selected {
+      background-color: rgba(255, 255, 255, 0.2);
+      border: 1px solid #666;
+    }
+
+    .weapon-option input[type="radio"] {
+      margin-right: 10px;
+    }
+
+    .weapon-preview {
+      width: 40px;
+      height: 30px;
+      object-fit: contain;
+      margin-right: 10px;
+    }
+
+    .weapon-name {
+      font-size: 0.9rem;
+      color: #fff;
+    }
+
+    /* Death screen overlay */
+    #deathScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.95);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      flex-direction: column;
+      cursor: pointer;
+    }
+
+    #deathScreen.show {
+      display: flex;
+    }
+
+    /* Hide message when death screen is shown */
+    #deathScreen.show ~ #messageContainer {
+      display: none;
+    }
+
+    #deathSkull {
+      font-size: 8rem;
+      text-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+      animation: pulseSkull 2s infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulseSkull {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+      }
+    }
+
+    #deathMessage {
+      color: #fff;
+      font-size: 2rem;
+      text-align: center;
+      margin-top: 20px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+      pointer-events: none;
+    }
+
+    #restartHint {
+      color: #ccc;
+      font-size: 1.2rem;
+      text-align: center;
+      margin-top: 15px;
+      opacity: 0.7;
+      animation: fadeInOut 2s infinite;
+      pointer-events: none;
+    }
+
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.9; }
+    }
+
+
+    #clickButton img {
+      width: 100%;
+      height: auto;
+      max-width: 100vw;
+      max-height: 90vh;
+      /* ograniczenie wysokości – możesz dostosować */
+      object-fit: contain;
+      display: block;
+    }
+
+
+
+
+
+    @media screen and (orientation: landscape) and (max-width: 1024px) {
+      #message {
+        font-size: 2vw; /* reduced from 3vw */
+        margin-bottom: 2vh;
+      }
+
+      #clickButton img {
+        width: 90vw;
+        height: 90vw;
+      }
+
+      #clickButton {
+        padding: 0;
+      }
+    }
+
+
+    @media screen and (orientation: portrait) {
+      body::before {
+        content: "Bierz swą lufe i do boju.";
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: black;
+        color: white;
+        padding: 20px;
+        font-size: 6vw;
+        z-index: 9999;
+        text-align: center;
+      }
+
+      #clickButton,
+      #resetButton,
+      #message,
+      #weaponMenu,
+      #weaponMenuButton,
+      #deathScreen {
+        display: none !important;
+      }
+    }
+
+
+    .fadeout {
+      animation: fadeOutBg 0.5s forwards;
+    }
+
+    @keyframes fadeOutBg {
+      from {
+        background-color: rgb(105, 0, 0);
+      }
+
+      to {
+        background-color: #000000;
+      }
+    }
+
+    .skull {
+      position: fixed;
+      bottom: 0;
+      font-size: 2rem;
+      animation: floatUpSkull 2.5s ease-out forwards;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    @keyframes floatUpSkull {
+      0% {
+        transform: translateY(0) rotate(0deg) scale(1);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translateY(-100vh) rotate(720deg) scale(1.5);
+        opacity: 0;
+      }
+    }
+
+    /* html,
+    body {
+      overflow: hidden;
+    } */
+
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #000000;
+      color: #fff;
+      transition: background-color 0.5s;
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+
+
+    #clickButton {
+      background: none;
+      border: none;
+      padding: 0;
+    }
+
+    #message {
+      font-size: 1.8vw; /* reduced from 2.5vw */
+      text-align: right;
+      z-index: 10;
+      background-color: rgba(0, 0, 0, 0.7); /* added semi-transparent background for better readability */
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 1px solid #333;
+    }
+
+
+
+    #resetButton {
+      font-size: 2rem;
+      padding: 10px 50px;
+      margin: 10px;
+      border: none;
+      border-radius: 10px;
+      /* background-color: #444; */
+      background-color: #000000;
+      color: white;
+      cursor: pointer;
+    }
+
+    .dead {
+      background-color: rgb(105, 0, 0) !important;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .shake {
+      animation: shake 0.5s;
+    }
+
+    @keyframes shake {
+      0% {
+        transform: translate(0px, 0px);
+      }
+
+      25% {
+        transform: translate(-10px, 10px);
+      }
+
+      50% {
+        transform: translate(10px, -10px);
+      }
+
+      75% {
+        transform: translate(-10px, 10px);
+      }
+
+      100% {
+        transform: translate(0px, 0px);
+      }
+    }
+
+    @media (max-width: 600px) {
+      #messageContainer {
+        max-width: 60vw;
+      }
+      
+      #message {
+        font-size: 4vw; /* reduced from 6vw */
+      }
+
+      #clickButton {
+        font-size: 7vw;
+        padding: 30vw 40vw;
+      }
+
+      #resetButton {
+        font-size: 7vw;
+        padding: 5vw 10vw;
+      }
+
+      #weaponMenu {
+        max-width: 150px;
+        padding: 10px;
+        bottom: 1vh;
+        left: 1vw;
+      }
+
+      #weaponMenuButton {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+        bottom: 1vh;
+        left: 1vw;
+      }
+
+      #weaponMenu h3 {
+        font-size: 1rem;
+      }
+
+      .weapon-name {
+        font-size: 0.8rem;
+      }
+
+      .weapon-preview {
+        width: 30px;
+        height: 25px;
+      }
+
+      #restartHint {
+        font-size: 1rem;
+      }
+
+      #deathSkull {
+        font-size: 6rem;
+      }
+
+      #deathMessage {
+        font-size: 1.5rem;
+      }
+    }
+
+    /* serduszka  */
+
+    .heart {
+      position: fixed;
+      bottom: 0;
+      font-size: 2rem;
+      animation: floatUp 2s ease-out forwards;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    @keyframes floatUp {
+      0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translateY(-100vh) scale(1.5);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="messageContainer">
+    <div id="message">Strzelaj...</div>
+  </div>
+
+  <!-- Weapon selection menu button -->
+  <div id="weaponMenuButton"></div>
+  
+  <!-- Weapon selection menu -->
+  <div id="weaponMenu">
+    <h3>Broń</h3>
+    <div class="weapon-option selected" data-weapon="revolver.png">
+      <input type="radio" name="weapon" value="revolver.png" checked>
+      <img src="revolver.png" alt="Classic Revolver" class="weapon-preview">
+      <span class="weapon-name">Klasyczny</span>
+    </div>
+    <div class="weapon-option" data-weapon="revolver2.png">
+      <input type="radio" name="weapon" value="revolver2.png">
+      <img src="revolver2.png" alt="Silver Revolver" class="weapon-preview">
+      <span class="weapon-name">Srebrny</span>
+    </div>
+    <div class="weapon-option" data-weapon="revolver3.png">
+      <input type="radio" name="weapon" value="revolver3.png">
+      <img src="revolver3.png" alt="Golden Revolver" class="weapon-preview">
+      <span class="weapon-name">Złoty</span>
+    </div>
+  </div>
+
+  <!-- Death screen overlay -->
+  <div id="deathScreen">
+    <div id="deathSkull">💀</div>
+    <div id="deathMessage">Zginąłeś przy strzale nr <span id="deathCount">1</span>!</div>
+    <div id="restartHint">Kliknij gdziekolwiek, aby zagrać ponownie</div>
+  </div>
+
+  <div id="buttonContainer">
+    <button id="clickButton">
+
+      <img src="revolver.png" alt="Revolver">
+    </button>
+
+  </div>
+
+  <button id="resetButton" class="hidden">Zagraj ponownie</button>
+
+  <!-- Dźwięki -->
+  <audio id="gunshot" src="gunshot.wav"></audio>
+  <audio id="dryFire" src="dry_fire.mp3"></audio>
+
+  <!-- Losowe kliknięcia: click1.mp3 do click10.mp3 -->
+  <audio id="clickSound"></audio>
+
+  <script>
+    let isDead = false;
+
+    let deathNumber = Math.floor(Math.random() * 6) + 1;
+    let clickCount = 0;
+    let isCounting = false;
+    let currentWeapon = "revolver.png"; // Track current weapon
+
+    const message = document.getElementById("message");
+    const clickButton = document.getElementById("clickButton");
+    const resetButton = document.getElementById("resetButton");
+    const weaponOptions = document.querySelectorAll(".weapon-option");
+    const weaponMenuButton = document.getElementById("weaponMenuButton");
+    const weaponMenu = document.getElementById("weaponMenu");
+    const deathScreen = document.getElementById("deathScreen");
+    const deathSkull = document.getElementById("deathSkull");
+    const deathCount = document.getElementById("deathCount");
+
+    const gunshotSound = document.getElementById("gunshot");
+    const dryFireSound = document.getElementById("dryFire");
+    const clickSound = document.getElementById("clickSound");
+
+    // Weapon menu toggle functionality
+    weaponMenuButton.addEventListener("click", () => {
+      weaponMenu.classList.toggle("open");
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!weaponMenuButton.controls && !weaponMenu.contains(e.target) && !weaponMenuButton.contains(e.target)) {
+        weaponMenu.classList.remove("open");
+      }
+    });
+
+    // Weapon selection functionality
+    weaponOptions.forEach(option => {
+      option.addEventListener("click", () => {
+        if (isDead || isCounting || clickCount > 0) return; // Don't allow weapon change after first shot
+        
+        // Remove selected class from all options
+        weaponOptions.forEach(opt => opt.classList.remove("selected"));
+        
+        // Add selected class to clicked option
+        option.classList.add("selected");
+        
+        // Update radio button
+        const radio = option.querySelector('input[type="radio"]');
+        radio.checked = true;
+        
+        // Update current weapon
+        currentWeapon = option.dataset.weapon;
+        
+        // Update main button image
+        const mainImage = clickButton.querySelector("img");
+        mainImage.src = currentWeapon;
+
+        // Close menu after selection
+        weaponMenu.classList.remove("open");
+      });
+    });
+
+    // Death screen click functionality (restart game)
+    deathScreen.addEventListener("click", () => {
+      restartGame();
+    });
+
+    function restartGame() {
+      deathNumber = Math.floor(Math.random() * 6) + 1;
+      clickCount = 0;
+      isCounting = false;
+      isDead = false;
+      message.innerText = "Strzelaj...";
+      
+      // Show weapon menu button again for new game
+      weaponMenuButton.style.display = 'flex';
+      
+      // Hide death screen first
+      deathScreen.classList.remove("show");
+      
+      // FIXED: Remove all death-related classes immediately
+      document.body.classList.remove("dead", "shake");
+      
+      // Force the background to be black immediately
+      document.body.style.backgroundColor = "#000000";
+      
+      // Reset the inline style after a brief moment to let CSS take over again
+      setTimeout(() => {
+        document.body.style.backgroundColor = "";
+      }, 50);
+
+      resetButton.classList.add("hidden");
+      clickButton.classList.remove("hidden");
+    }
+
+    function getRandomClickSound() {
+      const n = Math.floor(Math.random() * 26) + 1;
+      return `click${n}.mp3`;
+    }
+
+
+    // serduszka 
+
+    function spawnHeart() {
+      const heart = document.createElement("div");
+      heart.classList.add("heart");
+      heart.innerText = "❤️";
+
+      // Losowa pozycja na dole
+      heart.style.left = Math.random() * 100 + "vw";
+      heart.style.fontSize = (Math.random() * 1.5 + 1) + "rem";
+
+      document.body.appendChild(heart);
+
+      // Usuń serduszko po zakończeniu animacji
+      heart.addEventListener("animationend", () => {
+        heart.remove();
+      });
+    }
+
+    function spawnMultipleHearts(n = 10) {
+      for (let i = 0; i < n; i++) {
+        setTimeout(spawnHeart, i * 100); // odstęp między sercami
+      }
+    }
+
+    // czaszki 
+
+    function spawnSkull() {
+      const skull = document.createElement("div");
+      skull.classList.add("skull");
+      skull.innerText = "💀";
+
+      skull.style.left = Math.random() * 100 + "vw";
+      skull.style.fontSize = (Math.random() * 1.5 + 1) + "rem";
+
+      document.body.appendChild(skull);
+
+      skull.addEventListener("animationend", () => {
+        skull.remove();
+      });
+    }
+
+    function spawnMultipleSkulls(n = 15) {
+      for (let i = 0; i < n; i++) {
+        setTimeout(spawnSkull, i * 100);
+      }
+    }
+
+
+
+    clickButton.addEventListener("click", () => {
+      if (isCounting || isDead) return;
+
+      clickCount++;
+      isCounting = true;
+      
+      // Hide weapon menu after first shot
+      if (clickCount === 1) {
+        weaponMenuButton.style.display = 'none';
+        weaponMenu.classList.remove("open");
+      }
+      
+      // Don't hide button immediately - keep revolver visible during suspense
+
+      // Show suspense message
+      message.innerText = "💥 *KLIK*";
+
+      if (clickCount === deathNumber) {
+        // DEATH - wait for pause then immediate gunshot
+        setTimeout(() => {
+          document.body.classList.add("dead", "shake");
+          // message.innerText = "💀 Zginąłeś po " + clickCount + " strzale!";
+          gunshotSound.play();
+          
+          spawnMultipleSkulls(40);
+          clickButton.classList.add("hidden"); // Hide button only when dead
+          isDead = true;
+
+          // Show death screen after effects
+          setTimeout(() => {
+            deathCount.innerText = clickCount;
+            deathScreen.classList.add("show");
+          }, 500);
+
+          // Usuń efekt drgający po 0.5s
+          setTimeout(() => {
+            document.body.classList.remove("shake");
+          }, 500);
+
+          isCounting = false;
+        }, 0); // immediate death
+      } else {
+        // SURVIVAL - play dry fire sound IMMEDIATELY
+        dryFireSound.play();
+
+        // Then wait for pause before celebration
+        setTimeout(() => {
+          message.innerHTML = `🎉 Przeżyłeś ${clickCount} strzał!`;
+          clickSound.src = getRandomClickSound();
+          clickSound.play();
+          spawnMultipleHearts(10);
+          isCounting = false;
+        }, 1500); // 1.5 second pause before celebration
+      }
+    });
+
+    resetButton.addEventListener("click", () => {
+      restartGame();
+    });
+  </script>
+
+</body>
+
+</html>
